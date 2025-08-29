@@ -1,0 +1,16 @@
+# Core Web Framework
+Flask
+Flask-SQLAlchemy
+Flask-CORS
+
+# PLC Communication
+pymodbus
+
+# Database
+SQLAlchemy
+
+# API & Utilities
+requests
+
+# Development & Testing
+pytest
