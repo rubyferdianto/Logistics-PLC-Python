@@ -622,23 +622,23 @@
             <div class="card-title">📦 Raw Material Inventory</div>
             <div class="chart-container">
                 <div style="margin-bottom: 15px; font-weight: bold; opacity: 0.9;">Warehouse Levels (Units Available)</div>
-                <div class="chart-bar" style="width: 85%;" id="wh-a-anodes">
-                    <div>🔋 Warehouse A - Anodes: <strong>25 units</strong> (85% capacity)</div>
+                <div class="chart-bar" style="width: 50%;" id="wh-a-anodes">
+                    <div>🔋 Warehouse A - Anodes: <strong>15 units</strong> (50% capacity)</div>
                 </div>
-                <div class="chart-bar" style="width: 70%;" id="wh-a-cathodes">
-                    <div>⚡ Warehouse A - Cathodes: <strong>20 units</strong> (70% capacity)</div>
+                <div class="chart-bar" style="width: 35%;" id="wh-a-cathodes">
+                    <div>⚡ Warehouse A - Cathodes: <strong>12 units</strong> (35% capacity)</div>
                 </div>
-                <div class="chart-bar" style="width: 90%;" id="wh-a-electrolyte">
-                    <div>💧 Warehouse A - Electrolyte: <strong>30 units</strong> (90% capacity)</div>
+                <div class="chart-bar" style="width: 55%;" id="wh-a-electrolyte">
+                    <div>💧 Warehouse A - Electrolyte: <strong>18 units</strong> (55% capacity)</div>
                 </div>
-                <div class="chart-bar" style="width: 60%;" id="wh-b-anodes">
-                    <div>🔋 Warehouse B - Anodes: <strong>15 units</strong> (60% capacity)</div>
+                <div class="chart-bar" style="width: 27%;" id="wh-b-anodes">
+                    <div>🔋 Warehouse B - Anodes: <strong>8 units</strong> (27% capacity)</div>
                 </div>
-                <div class="chart-bar" style="width: 75%;" id="wh-b-cathodes">
-                    <div>⚡ Warehouse B - Cathodes: <strong>25 units</strong> (75% capacity)</div>
+                <div class="chart-bar" style="width: 43%;" id="wh-b-cathodes">
+                    <div>⚡ Warehouse B - Cathodes: <strong>15 units</strong> (43% capacity)</div>
                 </div>
-                <div class="chart-bar" style="width: 40%;" id="wh-b-electrolyte">
-                    <div>💧 Warehouse B - Electrolyte: <strong>10 units</strong> (40% capacity)</div>
+                <div class="chart-bar" style="width: 18%;" id="wh-b-electrolyte">
+                    <div>💧 Warehouse B - Electrolyte: <strong>6 units</strong> (18% capacity)</div>
                 </div>
             </div>
         </div>
@@ -742,6 +742,15 @@
                     Speed: <span id="speed-display" style="color: #00ff88; font-weight: bold;">5x</span>
                 </div>
             </div>
+
+            <div style="margin-top: 25px;">
+                <div style="margin-bottom: 15px; font-weight: bold; font-size: 1.1em;">✨ Layer Animation</div>
+                <div style="text-align: center;">
+                    <button class="control-button" onclick="toggleLayerAnimation()" id="animation-toggle">
+                        🎭 Enable Layer Animation
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -756,8 +765,8 @@
             C3: { speed: 0, load: 0, units: 268, running: false }
         };
         let inventoryData = {
-            'WH_A': { anodes: 25, cathodes: 20, electrolyte: 30 },
-            'WH_B': { anodes: 15, cathodes: 25, electrolyte: 10 }
+            'WH_A': { anodes: 15, cathodes: 12, electrolyte: 18 },
+            'WH_B': { anodes: 8, cathodes: 15, electrolyte: 6 }
         };
         let lastActiveLayer = 0;
 
@@ -805,6 +814,10 @@
             // Update total production
             productionCount = Object.values(conveyorData).reduce((sum, conv) => sum + conv.units, 0);
             document.getElementById('total-production').textContent = productionCount.toLocaleString();
+            
+            // Update active conveyor count for PLC display
+            const activeConveyors = Object.values(conveyorData).filter(conv => conv.running).length;
+            document.getElementById('plc-conveyors').textContent = activeConveyors;
             
             // Update production rate
             const rate = 180 + Math.floor(Math.random() * 20);
@@ -893,15 +906,76 @@
         function simulateInventoryConsumption() {
             if (!simulationRunning) return;
 
-            // Randomly consume materials
-            if (Math.random() < 0.4) { // 40% chance
+            console.log('Running inventory consumption...');
+            let consumptionOccurred = false;
+
+            // Calculate consumption based on active conveyors
+            const activeConveyors = Object.entries(conveyorData).filter(([id, conv]) => conv.running);
+            console.log('Active conveyors:', activeConveyors.length);
+            
+            // Each active conveyor has 80% chance to consume materials (increased from 60%)
+            activeConveyors.forEach(([conveyorId, conveyorData]) => {
+                if (Math.random() < 0.8) { // Increased consumption chance
+                    const warehouses = Object.keys(inventoryData);
+                    const warehouse = warehouses[Math.floor(Math.random() * warehouses.length)];
+                    const materials = Object.keys(inventoryData[warehouse]);
+                    const material = materials[Math.floor(Math.random() * materials.length)];
+                    
+                    if (inventoryData[warehouse][material] > 0) {
+                        // Consume 1-3 units per cycle for active conveyor (increased from 1-2)
+                        const consumption = Math.floor(Math.random() * 3) + 1;
+                        const actualConsumption = Math.min(consumption, inventoryData[warehouse][material]);
+                        inventoryData[warehouse][material] -= actualConsumption;
+                        consumptionOccurred = true;
+                        
+                        console.log(`${conveyorId} consumed ${actualConsumption} ${material} from ${warehouse}`);
+                        
+                        // Update UI
+                        const elementId = `${warehouse.toLowerCase()}-${material}`;
+                        const element = document.getElementById(elementId);
+                        if (element) {
+                            const quantity = inventoryData[warehouse][material];
+                            const capacity = material === 'anodes' ? 30 : material === 'cathodes' ? 35 : 33;
+                            const percentage = (quantity / capacity) * 100;
+                            
+                            element.style.width = percentage + '%';
+                            element.firstElementChild.innerHTML = 
+                                `${material === 'anodes' ? '🔋' : material === 'cathodes' ? '⚡' : '💧'} 
+                                 ${warehouse} - ${material.charAt(0).toUpperCase() + material.slice(1)}: 
+                                 <strong>${quantity} units</strong> (${percentage.toFixed(0)}% capacity)`;
+                                 
+                            // Change color based on quantity
+                            if (percentage < 20) {
+                                element.style.background = 'linear-gradient(45deg, #ff4444, #cc0000)';
+                            } else if (percentage < 50) {
+                                element.style.background = 'linear-gradient(45deg, #ff8800, #cc6600)';
+                            } else {
+                                element.style.background = 'linear-gradient(45deg, #00ff88, #00cc6a)';
+                            }
+                        }
+                        
+                        addLogEntry('warning', `[INVENTORY] → ${conveyorId} consumed ${actualConsumption} ${material} from ${warehouse}`);
+                        
+                        // Auto-refill if quantity gets very low
+                        if (inventoryData[warehouse][material] < 8) { // Increased threshold
+                            const refillAmount = Math.floor(Math.random() * 15) + 15; // Increased refill
+                            inventoryData[warehouse][material] += refillAmount;
+                            addLogEntry('success', `[INVENTORY] → Auto-refilled ${refillAmount} ${material} in ${warehouse}`);
+                        }
+                    }
+                }
+            });
+            
+            if (!consumptionOccurred && activeConveyors.length > 0) {
+                console.log('No consumption occurred this cycle, forcing consumption...');
+                // Force at least some consumption if conveyors are running
                 const warehouses = Object.keys(inventoryData);
                 const warehouse = warehouses[Math.floor(Math.random() * warehouses.length)];
                 const materials = Object.keys(inventoryData[warehouse]);
                 const material = materials[Math.floor(Math.random() * materials.length)];
                 
                 if (inventoryData[warehouse][material] > 0) {
-                    inventoryData[warehouse][material]--;
+                    inventoryData[warehouse][material] -= 1;
                     
                     // Update UI
                     const elementId = `${warehouse.toLowerCase()}-${material}`;
@@ -918,7 +992,8 @@
                              <strong>${quantity} units</strong> (${percentage.toFixed(0)}% capacity)`;
                     }
                     
-                    addLogEntry('warning', `[INVENTORY] → Consumed 1 ${material} from ${warehouse}`);
+                    addLogEntry('warning', `[INVENTORY] → Manual consumption: 1 ${material} from ${warehouse}`);
+                    console.log(`Forced consumption: 1 ${material} from ${warehouse}`);
                 }
             }
         }
@@ -996,10 +1071,40 @@
             addLogEntry('info', `[SYSTEM] → Simulation speed changed to ${simulationSpeed}x`);
         }
 
+        // Layer animation control
+        let layerAnimationEnabled = false;
+        let layerAnimationInterval = null;
+
+        function toggleLayerAnimation() {
+            layerAnimationEnabled = !layerAnimationEnabled;
+            const button = document.getElementById('animation-toggle');
+            
+            if (layerAnimationEnabled) {
+                // Start animation
+                layerAnimationInterval = setInterval(animateLayers, 2500 / simulationSpeed);
+                button.textContent = '🚫 Disable Layer Animation';
+                button.style.background = 'linear-gradient(45deg, #ff4444, #d32f2f)';
+                addLogEntry('info', '[SYSTEM] → Layer animation enabled');
+            } else {
+                // Stop animation
+                if (layerAnimationInterval) {
+                    clearInterval(layerAnimationInterval);
+                    layerAnimationInterval = null;
+                }
+                // Remove all active highlights
+                layers.forEach(layer => {
+                    document.getElementById(layer).classList.remove('active');
+                });
+                button.textContent = '🎭 Enable Layer Animation';
+                button.style.background = 'linear-gradient(45deg, #00ff88, #4caf50)';
+                addLogEntry('info', '[SYSTEM] → Layer animation disabled');
+            }
+        }
+
         // Initialize simulation with enhanced timing
         function startSimulation() {
-            // Layer animation
-            setInterval(animateLayers, 2500 / simulationSpeed);
+            // Layer animation - DISABLED to stop infinite highlighting loop
+            // setInterval(animateLayers, 2500 / simulationSpeed);
             
             // Update metrics
             setInterval(updateMetrics, 3000 / simulationSpeed);
@@ -1007,8 +1112,8 @@
             // Generate log messages
             setInterval(generateLogMessages, 4000 / simulationSpeed);
             
-            // Inventory consumption
-            setInterval(simulateInventoryConsumption, 8000 / simulationSpeed);
+            // Inventory consumption (every 2 seconds instead of 8)
+            setInterval(simulateInventoryConsumption, 2000 / simulationSpeed);
             
             // Initial messages
             addLogEntry('info', '[SYSTEM] → Integration dashboard initialized');

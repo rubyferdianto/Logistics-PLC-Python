@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Item Tracking System - PLC → SCADA → MES → Digital Twin → PLC</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .system-flow {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .flow-step {
+            text-align: center;
+            padding: 15px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 10px;
+            min-width: 150px;
+            transition: all 0.3s ease;
+        }
+
+        .flow-step.active {
+            background: rgba(0,255,136,0.3);
+            box-shadow: 0 0 20px rgba(0,255,136,0.4);
+            transform: scale(1.05);
+        }
+
+        .flow-arrow {
+            font-size: 2em;
+            color: #00ff88;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .card-title {
+            font-size: 1.4em;
+            margin-bottom: 15px;
+            color: #00ff88;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .item-tracker {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .item-card {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #00ff88;
+            transition: all 0.3s ease;
+        }
+
+        .item-card.moving {
+            border-left-color: #ffaa00;
+            animation: itemMove 2s ease-in-out infinite;
+        }
+
+        .item-card.found {
+            border-left-color: #00ff88;
+            background: rgba(0,255,136,0.2);
+            box-shadow: 0 0 15px rgba(0,255,136,0.3);
+        }
+
+        @keyframes itemMove {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(5px); }
+        }
+
+        .location-map {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .location-zone {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .location-zone.occupied {
+            border-color: #00ff88;
+            background: rgba(0,255,136,0.2);
+        }
+
+        .location-zone.searching {
+            border-color: #ffaa00;
+            background: rgba(255,170,0,0.2);
+            animation: searchPulse 1s infinite;
+        }
+
+        @keyframes searchPulse {
+            0%, 100% { box-shadow: 0 0 0 rgba(255,170,0,0.4); }
+            50% { box-shadow: 0 0 20px rgba(255,170,0,0.4); }
+        }
+
+        .control-panel {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #00ff88, #00cc6a);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,255,136,0.4);
+        }
+
+        .btn-warning {
+            background: linear-gradient(45deg, #ffaa00, #cc8800);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #ff4444, #cc0000);
+            color: white;
+        }
+
+        .btn-info {
+            background: linear-gradient(45deg, #3399ff, #0066cc);
+            color: white;
+        }
+
+        .btn-info:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(51,153,255,0.4);
+        }
+
+        .log-container {
+            grid-column: 1 / -1;
+            max-height: 365px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        .log-entry {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .log-timestamp {
+            opacity: 0.7;
+            font-size: 0.9em;
+        }
+
+        .log-info { color: #00ff88; }
+        .log-warning { color: #ffaa00; }
+        .log-error { color: #ff4444; }
+        .log-success { color: #00ff88; font-weight: bold; }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #00ff88;
+        }
+
+        .item-selector {
+            margin-bottom: 15px;
+        }
+
+        .item-selector select {
+            padding: 10px;
+            border-radius: 5px;
+            border: none;
+            background: rgba(255,255,255,0.9);
+            color: #333;
+            font-size: 1em;
+            width: 200px;
+        }
+
+        .digital-twin-view {
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 15px;
+        }
+
+        .twin-model {
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(45deg, rgba(0,255,136,0.2), rgba(0,204,106,0.2));
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+
+        /* Data Flow Information Styles */
+        .data-flow-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .flow-step-info {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 15px;
+            border-left: 4px solid #00ff88;
+            transition: all 0.3s ease;
+        }
+
+        .flow-step-info:hover {
+            background: rgba(0,255,136,0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,255,136,0.2);
+        }
+
+        .flow-step-info h4 {
+            margin-bottom: 10px;
+            color: #00ff88;
+            font-size: 1.1em;
+        }
+
+        .data-content {
+            font-size: 0.9em;
+            line-height: 1.6;
+        }
+
+        .data-content strong {
+            color: #ffffff;
+            display: block;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Smart Item Tracking System Simulation</h1>
+            <p>Item location tracking through PLC → SCADA → MES → Digital Twin → PLC integration</p>
+        </div>
+
+        <!-- System Flow Visualization -->
+        <div class="system-flow">
+            <div class="flow-step" id="plc-step">
+                <h3>🔧 PLC</h3>
+                <p>Physical Sensors</p>
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step" id="scada-step">
+                <h3>📊 SCADA</h3>
+                <p>Data Collection</p>
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step" id="mes-step">
+                <h3>⚙️ MES</h3>
+                <p>Production Tracking</p>
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step" id="twin-step">
+                <h3>🌐 Digital Twin</h3>
+                <p>Virtual Model</p>
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step" id="feedback-step">
+                <h3>🔄 PLC Response</h3>
+                <p>Location Found</p>
+            </div>
+        </div>
+
+        <!-- Data Flow Visualization -->
+                </div>
+
+        <!-- Data Transfer Information -->
+        <div class="card" style="margin-bottom: 20px;">
+            <div class="card-title">
+                📊 Data Transfer Flow - What Data Moves Through Each Step
+            </div>
+            <div class="data-flow-info">
+                <div class="flow-step-info">
+                    <h4>🔧 Step 1: PLC → SCADA</h4>
+                    <div class="data-content">
+                        <strong>Raw Sensor Data:</strong><br>
+                        • RFID/Barcode readings<br>
+                        • Signal strength (dB)<br>
+                        • Sensor timestamps<br>
+                        • Zone detection data<br>
+                        • Physical location coordinates
+                    </div>
+                </div>
+                
+                <div class="flow-step-info">
+                    <h4>📊 Step 2: SCADA → MES</h4>
+                    <div class="data-content">
+                        <strong>Processed Sensor Data:</strong><br>
+                        • Validated sensor readings<br>
+                        • Data quality metrics<br>
+                        • Confidence percentages<br>
+                        • Aggregated multi-sensor data<br>
+                        • Error-checked location info
+                    </div>
+                </div>
+                
+                <div class="flow-step-info">
+                    <h4>⚙️ Step 3: MES → Digital Twin</h4>
+                    <div class="data-content">
+                        <strong>Production Context Data:</strong><br>
+                        • Production order numbers<br>
+                        • Manufacturing stage info<br>
+                        • Priority levels<br>
+                        • Expected vs actual locations<br>
+                        • Production scheduling data
+                    </div>
+                </div>
+                
+                <div class="flow-step-info">
+                    <h4>🌐 Step 4: Digital Twin → PLC</h4>
+                    <div class="data-content">
+                        <strong>Virtual Model Processing:</strong><br>
+                        • 3D coordinate mapping<br>
+                        • Path planning calculations<br>
+                        • Collision detection<br>
+                        • Robot movement optimization<br>
+                        • Physical world synchronization
+                    </div>
+                </div>
+                
+                <div class="flow-step-info">
+                    <h4>🔄 Step 5: PLC Response</h4>
+                    <div class="data-content">
+                        <strong>Robot Command Data:</strong><br>
+                        • Target zone coordinates<br>
+                        • Navigation waypoints<br>
+                        • Action commands<br>
+                        • Movement instructions<br>
+                        • Execution confirmations
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <!-- Item Search Panel -->
+            <div class="card">
+                <div class="card-title">
+                    🔍 Item Location Search
+                </div>
+                
+                <div class="item-selector">
+                    <label for="itemSelect">Select Item to Track:</label><br>
+                    <select id="itemSelect">
+                        <option value="">-- Choose an item --</option>
+                        <option value="BATTERY_001">Battery Unit #001</option>
+                        <option value="MOTOR_A45">Motor Assembly A45</option>
+                        <option value="CHASSIS_X12">Chassis Frame X12</option>
+                        <option value="CONTROL_B78">Control Unit B78</option>
+                        <option value="SENSOR_S99">Sensor Module S99</option>
+                        <option value="CABLE_C33">Cable Harness C33</option>
+                    </select>
+                </div>
+
+                <div class="control-panel">
+                    <button class="btn btn-primary" onclick="startTracking()">🎯 Start Tracking</button>
+                    <button class="btn btn-warning" onclick="scanAllZones()">🔄 Scan All Zones</button>
+                    <button class="btn btn-info" onclick="clearLog()">🗑️ Clear Log</button>
+                    <button class="btn btn-danger" onclick="resetSystem()">🛑 Reset</button>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalItems">6</div>
+                        <div>Total Items</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="trackedItems">0</div>
+                        <div>Currently Tracking</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="foundItems">0</div>
+                        <div>Items Found</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="searchTime">0s</div>
+                        <div>Last Search Time</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Location Map -->
+            <div class="card">
+                <div class="card-title">
+                    🗺️ Factory Floor Map
+                </div>
+                
+                <div class="location-map" id="locationMap">
+                    <div class="location-zone" data-zone="A1" onclick="selectZone('A1')">
+                        <h4>Zone A1</h4>
+                        <p>Assembly Line 1</p>
+                        <div id="zone-A1-item">Empty</div>
+                    </div>
+                    <div class="location-zone" data-zone="A2" onclick="selectZone('A2')">
+                        <h4>Zone A2</h4>
+                        <p>Assembly Line 2</p>
+                        <div id="zone-A2-item">Empty</div>
+                    </div>
+                    <div class="location-zone" data-zone="B1" onclick="selectZone('B1')">
+                        <h4>Zone B1</h4>
+                        <p>Quality Control</p>
+                        <div id="zone-B1-item">Empty</div>
+                    </div>
+                    <div class="location-zone" data-zone="B2" onclick="selectZone('B2')">
+                        <h4>Zone B2</h4>
+                        <p>Testing Station</p>
+                        <div id="zone-B2-item">Empty</div>
+                    </div>
+                    <div class="location-zone" data-zone="C1" onclick="selectZone('C1')">
+                        <h4>Zone C1</h4>
+                        <p>Storage Area</p>
+                        <div id="zone-C1-item">Empty</div>
+                    </div>
+                    <div class="location-zone" data-zone="C2" onclick="selectZone('C2')">
+                        <h4>Zone C2</h4>
+                        <p>Packaging</p>
+                        <div id="zone-C2-item">Empty</div>
+                    </div>
+                    <div class="location-zone" data-zone="D1" onclick="selectZone('D1')">
+                        <h4>Zone D1</h4>
+                        <p>Shipping Dock</p>
+                        <div id="zone-D1-item">Empty</div>
+                    </div>
+                    <div class="location-zone" data-zone="D2" onclick="selectZone('D2')">
+                        <h4>Zone D2</h4>
+                        <p>Maintenance</p>
+                        <div id="zone-D2-item">Empty</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Digital Twin View -->
+            <div class="card">
+                <div class="card-title">
+                    🌐 Digital Twin Model
+                </div>
+                
+                <div class="digital-twin-view">
+                    <div class="twin-model">
+                        <h3>Virtual Factory Model</h3>
+                        <div id="twinStatus">Synchronizing with physical systems...</div>
+                    </div>
+                    
+                    <div class="item-tracker" id="itemTracker">
+                        <!-- Dynamic item cards will be added here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Real-time Logs -->
+            <div class="card">
+                <div class="card-title">
+                    📝 System Activity Log
+                </div>
+                
+                <div class="log-container" id="logContainer">
+                    <!-- Log entries will be added dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // System state
+        let isTracking = false;
+        let currentSearchItem = null;
+        let searchStartTime = null;
+        let activeFlowStep = 0;
+        
+        // Item database with locations
+        const itemDatabase = {
+            'BATTERY_001': { location: 'A1', status: 'In Production', lastUpdate: new Date() },
+            'MOTOR_A45': { location: 'B2', status: 'Testing', lastUpdate: new Date() },
+            'CHASSIS_X12': { location: 'C1', status: 'In Storage', lastUpdate: new Date() },
+            'CONTROL_B78': { location: 'A2', status: 'Assembly', lastUpdate: new Date() },
+            'SENSOR_S99': { location: 'D2', status: 'Maintenance', lastUpdate: new Date() },
+            'CABLE_C33': { location: 'C2', status: 'Packaging', lastUpdate: new Date() }
+        };
+
+        // Flow steps for animation
+        const flowSteps = ['plc-step', 'scada-step', 'mes-step', 'twin-step', 'feedback-step'];
+        
+        function addLogEntry(level, message) {
+            const logContainer = document.getElementById('logContainer');
+            const timestamp = new Date().toLocaleTimeString();
+            
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.innerHTML = `
+                <span class="log-timestamp">${timestamp}</span>
+                <span class="log-${level}">[${level.toUpperCase()}] ${message}</span>
+            `;
+            
+            logContainer.insertBefore(logEntry, logContainer.firstChild);
+            
+            // Keep only last 20 entries
+            const entries = logContainer.querySelectorAll('.log-entry');
+            if (entries.length > 20) {
+                entries[entries.length - 1].remove();
+            }
+        }
+
+        function animateFlowStep() {
+            // Remove active class from all steps
+            flowSteps.forEach(step => {
+                document.getElementById(step).classList.remove('active');
+            });
+            
+            // Add active class to current step
+            document.getElementById(flowSteps[activeFlowStep]).classList.add('active');
+            
+            // Generate step-specific data showing what's actually transferring
+            const currentItem = currentSearchItem || 'BATTERY_001';
+            const timestamp = new Date().toLocaleTimeString();
+            const randomValues = {
+                signal: (Math.random() * 10 + 90).toFixed(1),
+                confidence: (Math.random() * 15 + 85).toFixed(1),
+                orderId: Math.floor(Math.random() * 9999),
+                coordinates: {
+                    x: Math.floor(Math.random() * 300 + 100),
+                    y: Math.floor(Math.random() * 400 + 150),
+                    z: Math.floor(Math.random() * 50 + 10)
+                },
+                accuracy: (Math.random() * 5 + 95).toFixed(1)
+            };
+            
+            const stepMessages = {
+                0: `🔍 PLC SEARCHING → Raw Modbus/I/O Data:
+{
+  "ModbusAddress": "40001-40008",
+  "DataBlock": "DB1.DBX${Math.floor(Math.random() * 100)}.0",
+  "RawHex": "0x${Math.floor(Math.random() * 255).toString(16).padStart(2, '0')}${Math.floor(Math.random() * 255).toString(16).padStart(2, '0')}",
+  "ProximitySensor": "${Math.random() > 0.5 ? '1' : '0'}",
+  "AnalogInput": "${Math.floor(Math.random() * 4095)}/4095",
+  "PLCCycle": "${(Math.random() * 5 + 2).toFixed(1)}ms",
+  "Target": "${currentItem}",
+  "Status": "SCANNING"
+}`,
+                1: `📊 SCADA PROCESSING → Historian & Trends:
+{
+  "TagCollection": [
+    "RFID_ZONE_A.VALUE",
+    "CONVEYOR_SPEED.ACTUAL", 
+    "SENSOR_ARRAY[1-8].STATUS"
+  ],
+  "HistorianQuery": "SELECT * FROM sensors WHERE timestamp > NOW()-5s",
+  "TrendData": {confidence: ${randomValues.confidence}%, pattern: "normal"},
+  "AlarmStatus": "CLEAR",
+  "DataQuality": "GOOD_${Math.floor(Math.random() * 100)}",
+  "FilteredItem": "${currentItem}"
+}`,
+                2: `🏭 MES CONTEXT → ERP/Production Database:
+{
+  "SQLQuery": "SELECT * FROM work_orders WHERE item_code='${currentItem}'",
+  "ProductionOrder": "PO_${randomValues.orderId}",
+  "BOMLevel": "LEVEL_${Math.floor(Math.random() * 5 + 1)}",
+  "WorkCenter": "WC_ASSEMBLY_A1",
+  "OperationStep": "${Math.floor(Math.random() * 10 + 1)}/15",
+  "QualityCheck": "IN_SPEC",
+  "BatchNumber": "B${timestamp.replace(/:/g, '')}",
+  "SearchResult": "ITEM_LOCATED"
+}`,
+                3: `🔬 DIGITAL TWIN → Virtual Model Processing:
+{
+  "3DModel": "factory_layout_${currentItem}.cad",
+  "PathPlanning": "A*_Algorithm_Result",
+  "TargetCoordinates": [${randomValues.coordinates.x}, ${randomValues.coordinates.y}, ${randomValues.coordinates.z}],
+  "RobotKinematics": "6DOF_Joint_Calculations",
+  "CollisionDetection": "OBSTACLE_MAP_CLEAR",
+  "MovementOptimization": "SHORTEST_PATH_CALCULATED",
+  "CycleTime": "${(Math.random() * 2 + 3).toFixed(1)}s",
+  "VirtualValidation": "MOTION_APPROVED"
+}`,
+                4: `🤖 PLC COMMAND → Robot Control Output:
+{
+  "MotionControl": "SERVO_AXIS[1-6]",
+  "GCodeSequence": "G01 X${randomValues.coordinates.x} Y${randomValues.coordinates.y} F1000",
+  "SafetyChecks": "LIGHT_CURTAIN_CLEAR",
+  "PneumaticValves": "SOL_GRIPPER_EXTEND",
+  "FeedbackLoop": "ENCODER_POSITION_OK",
+  "ExecutionTime": "${(Math.random() * 3 + 1).toFixed(1)}s",
+  "Status": "EXECUTING_PICKUP",
+  "ItemFound": "${currentItem}"
+}`
+            };
+            
+            addLogEntry('info', stepMessages[activeFlowStep]);
+            
+            activeFlowStep = (activeFlowStep + 1) % flowSteps.length;
+        }
+
+        function updateLocationMap() {
+            // Clear all zones first
+            const zones = document.querySelectorAll('.location-zone');
+            zones.forEach(zone => {
+                zone.classList.remove('occupied', 'searching');
+                const zoneId = zone.dataset.zone;
+                const itemDiv = document.getElementById(`zone-${zoneId}-item`);
+                itemDiv.textContent = 'Empty';
+            });
+
+            // Place items in their locations
+            Object.entries(itemDatabase).forEach(([itemId, data]) => {
+                const zone = document.querySelector(`[data-zone="${data.location}"]`);
+                if (zone) {
+                    zone.classList.add('occupied');
+                    const itemDiv = document.getElementById(`zone-${data.location}-item`);
+                    itemDiv.textContent = itemId.replace('_', ' ');
+                }
+            });
+        }
+
+        function updateItemTracker() {
+            const tracker = document.getElementById('itemTracker');
+            tracker.innerHTML = '';
+
+            Object.entries(itemDatabase).forEach(([itemId, data]) => {
+                const itemCard = document.createElement('div');
+                itemCard.className = 'item-card';
+                if (currentSearchItem === itemId) {
+                    itemCard.classList.add('found');
+                }
+                
+                itemCard.innerHTML = `
+                    <h4>${itemId.replace('_', ' ')}</h4>
+                    <p><strong>Location:</strong> Zone ${data.location}</p>
+                    <p><strong>Status:</strong> ${data.status}</p>
+                    <p><strong>Updated:</strong> ${data.lastUpdate.toLocaleTimeString()}</p>
+                `;
+                
+                tracker.appendChild(itemCard);
+            });
+        }
+
+        function startTracking() {
+            const selectedItem = document.getElementById('itemSelect').value;
+            if (!selectedItem) {
+                addLogEntry('error', 'Please select an item to track');
+                return;
+            }
+
+            currentSearchItem = selectedItem;
+            isTracking = true;
+            searchStartTime = Date.now();
+            
+            addLogEntry('info', `Starting location search for ${selectedItem.replace('_', ' ')}`);
+            
+            // Start flow animation
+            const flowInterval = setInterval(animateFlowStep, 800);
+            
+            // Simulate search process
+            setTimeout(() => {
+                const itemData = itemDatabase[selectedItem];
+                if (itemData) {
+                    // Highlight found location
+                    const foundZone = document.querySelector(`[data-zone="${itemData.location}"]`);
+                    foundZone.classList.add('searching');
+                    
+                    setTimeout(() => {
+                        foundZone.classList.remove('searching');
+                        addLogEntry('success', `Item ${selectedItem.replace('_', ' ')} found in Zone ${itemData.location}`);
+                        
+                        const searchTime = Math.round((Date.now() - searchStartTime) / 1000);
+                        document.getElementById('searchTime').textContent = searchTime + 's';
+                        document.getElementById('foundItems').textContent = 
+                            parseInt(document.getElementById('foundItems').textContent) + 1;
+                        
+                        clearInterval(flowInterval);
+                        isTracking = false;
+                        updateItemTracker();
+                    }, 2000);
+                }
+            }, 4000);
+            
+            document.getElementById('trackedItems').textContent = '1';
+        }
+
+        function scanAllZones() {
+            addLogEntry('info', 'Initiating full factory scan...');
+            
+            const zones = document.querySelectorAll('.location-zone');
+            let scanDelay = 0;
+            
+            zones.forEach(zone => {
+                setTimeout(() => {
+                    zone.classList.add('searching');
+                    const zoneId = zone.dataset.zone;
+                    addLogEntry('info', `Scanning Zone ${zoneId}...`);
+                    
+                    setTimeout(() => {
+                        zone.classList.remove('searching');
+                    }, 1000);
+                }, scanDelay);
+                
+                scanDelay += 300;
+            });
+            
+            setTimeout(() => {
+                addLogEntry('success', 'Factory scan completed - All items located');
+            }, scanDelay + 1000);
+        }
+
+        function clearLog() {
+            const logContainer = document.getElementById('logContainer');
+            logContainer.innerHTML = '';
+            addLogEntry('info', 'System activity log cleared');
+        }
+
+        function resetSystem() {
+            isTracking = false;
+            currentSearchItem = null;
+            activeFlowStep = 0;
+            
+            // Reset UI
+            document.getElementById('itemSelect').value = '';
+            document.getElementById('trackedItems').textContent = '0';
+            document.getElementById('foundItems').textContent = '0';
+            document.getElementById('searchTime').textContent = '0s';
+            
+            // Clear active states
+            flowSteps.forEach(step => {
+                document.getElementById(step).classList.remove('active');
+            });
+            
+            document.querySelectorAll('.location-zone').forEach(zone => {
+                zone.classList.remove('searching');
+            });
+            
+            addLogEntry('info', 'System reset completed');
+            updateItemTracker();
+        }
+
+        function selectZone(zoneId) {
+            // Find item in selected zone
+            const itemInZone = Object.entries(itemDatabase).find(([id, data]) => data.location === zoneId);
+            
+            if (itemInZone) {
+                const [itemId, data] = itemInZone;
+                addLogEntry('info', `Zone ${zoneId} selected - Contains ${itemId.replace('_', ' ')}`);
+                addLogEntry('info', `Item status: ${data.status}, Last updated: ${data.lastUpdate.toLocaleTimeString()}`);
+            } else {
+                addLogEntry('warning', `Zone ${zoneId} is empty`);
+            }
+        }
+
+        // Initialize system
+        function initializeSystem() {
+            addLogEntry('success', 'Item Tracking System initialized');
+            addLogEntry('info', 'Digital Twin synchronized with physical factory');
+            addLogEntry('info', 'PLC sensors online and monitoring');
+            addLogEntry('info', 'SCADA data collection active');
+            addLogEntry('info', 'MES tracking services ready');
+            
+            updateLocationMap();
+            updateItemTracker();
+            
+            // Update digital twin status
+            document.getElementById('twinStatus').textContent = 'Real-time sync active - 6 items tracked';
+            
+            // Simulate periodic updates
+            setInterval(() => {
+                if (!isTracking) {
+                    // Randomly update item timestamps to show activity
+                    const items = Object.keys(itemDatabase);
+                    const randomItem = items[Math.floor(Math.random() * items.length)];
+                    itemDatabase[randomItem].lastUpdate = new Date();
+                    updateItemTracker();
+                }
+            }, 30000); // Update every 30 seconds
+        }
+
+        // Start the system when page loads
+        window.addEventListener('load', initializeSystem);
+    </script>
+</body>
+</html>
