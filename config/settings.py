@@ -19,7 +19,11 @@ class Settings:
         self.DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///logistics_plc.db")
         self.DATABASE_ECHO = os.getenv("DATABASE_ECHO", "False").lower() == "true"
         
-        # PLC Connection Settings
+        # PLC / MQTT / Broker
+        self.MQTT_BROKER = os.getenv("MQTT_BROKER", "test.mosquitto.org")
+        self.MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
+        self.MQTT_WS_PORT = int(os.getenv("MQTT_WS_PORT", "8081"))
+        self.MQTT_TOPIC_PREFIX = os.getenv("MQTT_TOPIC_PREFIX", "evfactory")
         self.PLC_HOST = os.getenv("PLC_HOST", "192.168.1.100")
         self.PLC_PORT = int(os.getenv("PLC_PORT", "502"))
         self.PLC_UNIT_ID = int(os.getenv("PLC_UNIT_ID", "1"))
@@ -28,13 +32,30 @@ class Settings:
         # OPC UA Settings
         self.OPCUA_ENDPOINT = os.getenv("OPCUA_ENDPOINT", "opc.tcp://192.168.1.100:4840")
         self.OPCUA_NAMESPACE = int(os.getenv("OPCUA_NAMESPACE", "2"))
+        self.OPCUA_SECURITY_MODE = os.getenv("OPCUA_SECURITY_MODE", "None")
+        self.OPCUA_SECURITY_POLICY = os.getenv("OPCUA_SECURITY_POLICY", "None")
+        self.OPCUA_USERNAME = os.getenv("OPCUA_USERNAME", "")
+        self.OPCUA_PASSWORD = os.getenv("OPCUA_PASSWORD", "")
+        self.OPCUA_TIMEOUT = int(os.getenv("OPCUA_TIMEOUT", "30"))
         
-        # MQTT Settings
-        self.MQTT_BROKER = os.getenv("MQTT_BROKER", "localhost")
-        self.MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
-        self.MQTT_USERNAME = os.getenv("MQTT_USERNAME")
-        self.MQTT_PASSWORD = os.getenv("MQTT_PASSWORD")
-        self.MQTT_TOPIC_PREFIX = os.getenv("MQTT_TOPIC_PREFIX", "logistics/plc")
+        # MES System Settings
+        self.MES_DATABASE_PATH = os.getenv("MES_DATABASE_PATH", "manufacturing.db")
+        self.MES_UPDATE_INTERVAL = int(os.getenv("MES_UPDATE_INTERVAL", "5"))
+        self.MES_AUTO_SCHEDULING = os.getenv("MES_AUTO_SCHEDULING", "true").lower() == "true"
+        self.MES_QUALITY_THRESHOLD = float(os.getenv("MES_QUALITY_THRESHOLD", "95.0"))
+        
+        # Production Settings
+        self.PRODUCTION_SCHEDULE_INTERVAL = int(os.getenv("PRODUCTION_SCHEDULE_INTERVAL", "3600"))  # 1 hour
+        self.INVENTORY_CHECK_INTERVAL = int(os.getenv("INVENTORY_CHECK_INTERVAL", "300"))  # 5 minutes
+        self.QUALITY_CHECK_INTERVAL = int(os.getenv("QUALITY_CHECK_INTERVAL", "60"))  # 1 minute
+        self.LOW_STOCK_THRESHOLD = int(os.getenv("LOW_STOCK_THRESHOLD", "10"))
+        self.AUTO_RESTOCK_AMOUNT = int(os.getenv("AUTO_RESTOCK_AMOUNT", "30"))
+        
+        # System Monitoring
+        self.HEALTH_CHECK_INTERVAL = int(os.getenv("HEALTH_CHECK_INTERVAL", "30"))
+        self.LOG_RETENTION_DAYS = int(os.getenv("LOG_RETENTION_DAYS", "30"))
+        self.METRICS_RETENTION_DAYS = int(os.getenv("METRICS_RETENTION_DAYS", "90"))
+        self.ENABLE_PERFORMANCE_MONITORING = os.getenv("ENABLE_PERFORMANCE_MONITORING", "true").lower() == "true"
         
         # Web Dashboard
         self.FLASK_HOST = os.getenv("FLASK_HOST", "0.0.0.0")

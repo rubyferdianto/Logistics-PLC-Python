@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EV Manufacturing Integration - Standalone Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f1419 0%, #1a252f 25%, #2a3441 50%, #1a252f 75%, #0f1419 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            color: #fff;
+            overflow-x: auto;
+            min-height: 100vh;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .header {
+            text-align: center;
+            padding: 25px;
+            background: rgba(0, 0, 0, 0.4);
+            border-bottom: 3px solid #00ff88;
+            backdrop-filter: blur(15px);
+        }
+
+        .header h1 {
+            font-size: 3em;
+            margin-bottom: 15px;
+            color: #00ff88;
+            text-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+            animation: titleGlow 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes titleGlow {
+            from { text-shadow: 0 0 20px rgba(0, 255, 136, 0.5); }
+            to { text-shadow: 0 0 30px rgba(0, 255, 136, 0.8), 0 0 40px rgba(0, 255, 136, 0.3); }
+        }
+
+        .header p {
+            font-size: 1.3em;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .integration-flow {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 50px 30px;
+            background: rgba(255, 255, 255, 0.08);
+            margin: 30px;
+            border-radius: 20px;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .layer {
+            flex: 1;
+            text-align: center;
+            padding: 25px;
+            margin: 0 15px;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 15px;
+            border: 2px solid transparent;
+            transition: all 0.5s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .layer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 136, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .layer.active {
+            border-color: #00ff88;
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.4);
+            transform: scale(1.08);
+            background: rgba(0, 255, 136, 0.1);
+        }
+
+        .layer.active::before {
+            left: 100%;
+        }
+
+        .layer-icon {
+            font-size: 3.5em;
+            margin-bottom: 20px;
+            display: block;
+            animation: iconFloat 4s ease-in-out infinite;
+        }
+
+        @keyframes iconFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .layer-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #00ff88;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .layer-status {
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            margin-bottom: 20px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .status-online {
+            background: linear-gradient(45deg, #00ff88, #00cc6a);
+            color: white;
+            box-shadow: 0 4px 15px rgba(0, 255, 136, 0.3);
+        }
+
+        .status-processing {
+            background: linear-gradient(45deg, #ff9800, #f57c00);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 152, 0, 0.3);
+        }
+
+        .status-monitoring {
+            background: linear-gradient(45deg, #2196f3, #1976d2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);
+        }
+
+        .layer-metrics {
+            font-size: 0.95em;
+            opacity: 0.9;
+            line-height: 1.8;
+        }
+
+        .metric-highlight {
+            color: #00ff88;
+            font-weight: bold;
+        }
+
+        .data-flow-arrow {
+            font-size: 2.5em;
+            color: #00ff88;
+            animation: arrowPulse 2s infinite;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.6);
+        }
+
+        @keyframes arrowPulse {
+            0%, 100% { 
+                opacity: 0.6; 
+                transform: scale(1);
+                text-shadow: 0 0 10px rgba(0, 255, 136, 0.6);
+            }
+            50% { 
+                opacity: 1; 
+                transform: scale(1.2);
+                text-shadow: 0 0 20px rgba(0, 255, 136, 0.9);
+            }
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 25px;
+            padding: 30px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .dashboard-card {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 40px rgba(0, 255, 136, 0.2);
+        }
+
+        .card-title {
+            font-size: 1.6em;
+            margin-bottom: 25px;
+            color: #00ff88;
+            border-bottom: 3px solid #00ff88;
+            padding-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .metric-item {
+            text-align: center;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            border: 1px solid rgba(0, 255, 136, 0.1);
+            transition: background 0.3s ease;
+        }
+
+        .metric-item:hover {
+            background: rgba(0, 255, 136, 0.1);
+        }
+
+        .metric-value {
+            font-size: 2.2em;
+            font-weight: bold;
+            color: #00ff88;
+            display: block;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+        }
+
+        .metric-label {
+            font-size: 0.95em;
+            opacity: 0.8;
+            margin-top: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .conveyor-status {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin: 15px 0;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            border-left: 5px solid #00ff88;
+            transition: all 0.3s ease;
+        }
+
+        .conveyor-running {
+            border-left-color: #00ff88;
+            animation: conveyorRun 3s ease-in-out infinite;
+        }
+
+        .conveyor-stopped {
+            border-left-color: #ff4444;
+            opacity: 0.7;
+        }
+
+        @keyframes conveyorRun {
+            0%, 100% { box-shadow: 0 0 0 rgba(0, 255, 136, 0.4); }
+            50% { box-shadow: 0 0 20px rgba(0, 255, 136, 0.4); }
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 25px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 15px 0;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(45deg, #00ff88, #00cc6a, #4caf50);
+            background-size: 200% 200%;
+            animation: progressFlow 3s ease infinite, progressGlow 2s ease-in-out infinite alternate;
+            border-radius: 15px;
+            transition: width 1s ease;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.4);
+        }
+
+        @keyframes progressFlow {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 200% 50%; }
+        }
+
+        @keyframes progressGlow {
+            from { box-shadow: 0 0 20px rgba(0, 255, 136, 0.4); }
+            to { box-shadow: 0 0 30px rgba(0, 255, 136, 0.6); }
+        }
+
+        .chart-container {
+            height: 280px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chart-bar {
+            background: linear-gradient(45deg, #00ff88, #4caf50);
+            margin: 8px 0;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            font-size: 0.95em;
+            transition: all 0.5s ease;
+            animation: barGrow 2s ease-out;
+        }
+
+        @keyframes barGrow {
+            from { width: 0%; opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .chart-bar:hover {
+            background: linear-gradient(45deg, #4caf50, #8bc34a);
+            transform: scale(1.02);
+            box-shadow: 0 4px 15px rgba(0, 255, 136, 0.3);
+        }
+
+        .log-container {
+            height: 250px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 12px;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            border: 1px solid rgba(0, 255, 136, 0.2);
+        }
+
+        .log-entry {
+            margin: 8px 0;
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            animation: logFadeIn 0.5s ease;
+        }
+
+        @keyframes logFadeIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .log-timestamp {
+            color: #888;
+            margin-right: 12px;
+        }
+
+        .log-info { color: #00ff88; }
+        .log-warning { color: #ff9800; }
+        .log-error { color: #ff4444; }
+
+        .controls {
+            text-align: center;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            margin: 20px 0;
+        }
+
+        .control-button {
+            background: linear-gradient(45deg, #00ff88, #4caf50);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            margin: 0 10px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(0, 255, 136, 0.3);
+        }
+
+        .control-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 255, 136, 0.4);
+        }
+
+        .control-button.danger {
+            background: linear-gradient(45deg, #ff4444, #d32f2f);
+            box-shadow: 0 4px 15px rgba(255, 68, 68, 0.3);
+        }
+
+        .control-button.danger:hover {
+            box-shadow: 0 6px 20px rgba(255, 68, 68, 0.4);
+        }
+
+        .alert-item {
+            background: rgba(255, 152, 0, 0.15);
+            border: 1px solid #ff9800;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 12px 0;
+            font-size: 0.95em;
+            animation: alertPulse 0.5s ease;
+        }
+
+        @keyframes alertPulse {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .alert-critical {
+            background: rgba(244, 67, 54, 0.15);
+            border-color: #f44336;
+            animation: criticalBlink 2s ease-in-out infinite;
+        }
+
+        @keyframes criticalBlink {
+            0%, 100% { box-shadow: 0 0 0 rgba(244, 67, 54, 0.4); }
+            50% { box-shadow: 0 0 20px rgba(244, 67, 54, 0.6); }
+        }
+
+        @media (max-width: 768px) {
+            .integration-flow {
+                flex-direction: column;
+                padding: 30px 20px;
+            }
+            
+            .data-flow-arrow {
+                transform: rotate(90deg);
+                margin: 20px 0;
+            }
+            
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2.2em;
+            }
+            
+            .metric-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .status-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background: rgba(0, 255, 136, 0.9);
+            color: white;
+            border-radius: 25px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(0, 255, 136, 0.3);
+            animation: statusBlink 3s ease-in-out infinite;
+        }
+
+        @keyframes statusBlink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+    </style>
+</head>
+<body>
+    <div class="status-indicator">🟢 SYSTEM ONLINE</div>
+
+    <div class="header">
+        <h1>🏭 EV Manufacturing Integration</h1>
+        <p>Real-time monitoring of <strong>PLC → OPC UA → SCADA → MES → DATABASE</strong></p>
+        <p style="font-size: 1em; opacity: 0.7;">Complete industrial automation pipeline visualization</p>
+    </div>
+
+    <div class="integration-flow">
+        <div class="layer" id="plc-layer">
+            <div class="layer-icon">🔌</div>
+            <div class="layer-title">PLC</div>
+            <div class="layer-status status-online">ONLINE</div>
+            <div class="layer-metrics">
+                <div>Conveyors: <span class="metric-highlight" id="plc-conveyors">3</span></div>
+                <div>Sensors: <span class="metric-highlight" id="plc-sensors">12</span></div>
+                <div>Update Rate: <span class="metric-highlight" id="plc-rate">100ms</span></div>
+                <div>Data Points: <span class="metric-highlight" id="plc-datapoints">48</span></div>
+            </div>
+        </div>
+
+        <div class="data-flow-arrow">→</div>
+
+        <div class="layer" id="opcua-layer">
+            <div class="layer-icon">📡</div>
+            <div class="layer-title">OPC UA</div>
+            <div class="layer-status status-online">CONNECTED</div>
+            <div class="layer-metrics">
+                <div>Nodes: <span class="metric-highlight" id="opcua-nodes">24</span></div>
+                <div>Quality: <span class="metric-highlight" id="opcua-quality">Good</span></div>
+                <div>Latency: <span class="metric-highlight" id="opcua-latency">15ms</span></div>
+                <div>Security: <span class="metric-highlight">None</span></div>
+            </div>
+        </div>
+
+        <div class="data-flow-arrow">→</div>
+
+        <div class="layer" id="scada-layer">
+            <div class="layer-icon">📊</div>
+            <div class="layer-title">SCADA</div>
+            <div class="layer-status status-monitoring">MONITORING</div>
+            <div class="layer-metrics">
+                <div>Alarms: <span class="metric-highlight" id="scada-alarms">0</span></div>
+                <div>Trends: <span class="metric-highlight" id="scada-trends">Active</span></div>
+                <div>HMI: <span class="metric-highlight" id="scada-hmi">Online</span></div>
+                <div>Graphics: <span class="metric-highlight">12</span></div>
+            </div>
+        </div>
+
+        <div class="data-flow-arrow">→</div>
+
+        <div class="layer" id="mes-layer">
+            <div class="layer-icon">🏭</div>
+            <div class="layer-title">MES</div>
+            <div class="layer-status status-processing">PROCESSING</div>
+            <div class="layer-metrics">
+                <div>Orders: <span class="metric-highlight" id="mes-orders">3</span></div>
+                <div>Efficiency: <span class="metric-highlight" id="mes-efficiency">94.5%</span></div>
+                <div>Quality: <span class="metric-highlight" id="mes-quality">98.2%</span></div>
+                <div>OEE: <span class="metric-highlight" id="mes-oee">92.1%</span></div>
+            </div>
+        </div>
+
+        <div class="data-flow-arrow">→</div>
+
+        <div class="layer" id="database-layer">
+            <div class="layer-icon">💾</div>
+            <div class="layer-title">DATABASE</div>
+            <div class="layer-status status-online">STORING</div>
+            <div class="layer-metrics">
+                <div>Records: <span class="metric-highlight" id="db-records">145K</span></div>
+                <div>Storage: <span class="metric-highlight" id="db-storage">2.3GB</span></div>
+                <div>Speed: <span class="metric-highlight" id="db-speed">12ms</span></div>
+                <div>Queries/s: <span class="metric-highlight" id="db-queries">280</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="dashboard-card">
+            <div class="card-title">🏭 Production Metrics</div>
+            <div class="metric-grid">
+                <div class="metric-item">
+                    <span class="metric-value" id="total-production">1,247</span>
+                    <div class="metric-label">Units Produced Today</div>
+                </div>
+                <div class="metric-item">
+                    <span class="metric-value" id="production-rate">185</span>
+                    <div class="metric-label">Units per Hour</div>
+                </div>
+                <div class="metric-item">
+                    <span class="metric-value" id="efficiency">94.5%</span>
+                    <div class="metric-label">Overall Efficiency</div>
+                </div>
+                <div class="metric-item">
+                    <span class="metric-value" id="quality-rate">98.2%</span>
+                    <div class="metric-label">Quality Pass Rate</div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 25px;">
+                <div style="margin-bottom: 15px; font-weight: bold; font-size: 1.1em;">📈 Daily Production Progress</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="production-progress" style="width: 74.7%"></div>
+                </div>
+                <div style="text-align: center; margin-top: 10px; font-size: 0.95em; opacity: 0.8;">
+                    <strong>Target:</strong> 1,670 units | <strong>Current:</strong> 1,247 units | <strong>Remaining:</strong> 423 units
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-card">
+            <div class="card-title">⚙️ Conveyor System Status</div>
+            <div class="conveyor-status conveyor-running" id="conveyor-c1">
+                <div>
+                    <strong>Conveyor C1 - Main Line</strong><br>
+                    <span style="font-size: 0.9em;">Speed: <span class="metric-highlight" id="c1-speed">78</span>% | Load: <span class="metric-highlight" id="c1-load">85</span>% | Units: <span class="metric-highlight" id="c1-units">456</span></span>
+                </div>
+                <div style="color: #00ff88; font-weight: bold; font-size: 1.1em;">🟢 RUNNING</div>
+            </div>
+            <div class="conveyor-status conveyor-running" id="conveyor-c2">
+                <div>
+                    <strong>Conveyor C2 - Assembly Line</strong><br>
+                    <span style="font-size: 0.9em;">Speed: <span class="metric-highlight" id="c2-speed">82</span>% | Load: <span class="metric-highlight" id="c2-load">78</span>% | Units: <span class="metric-highlight" id="c2-units">523</span></span>
+                </div>
+                <div style="color: #00ff88; font-weight: bold; font-size: 1.1em;">🟢 RUNNING</div>
+            </div>
+            <div class="conveyor-status conveyor-stopped" id="conveyor-c3">
+                <div>
+                    <strong>Conveyor C3 - Quality Check</strong><br>
+                    <span style="font-size: 0.9em;">Speed: <span class="metric-highlight" id="c3-speed">0</span>% | Load: <span class="metric-highlight" id="c3-load">0</span>% | Units: <span class="metric-highlight" id="c3-units">268</span></span>
+                </div>
+                <div style="color: #ff4444; font-weight: bold; font-size: 1.1em;">🔧 MAINTENANCE</div>
+            </div>
+        </div>
+
+        <div class="dashboard-card">
+            <div class="card-title">📦 Raw Material Inventory</div>
+            <div class="chart-container">
+                <div style="margin-bottom: 15px; font-weight: bold; opacity: 0.9;">Warehouse Levels (Units Available)</div>
+                <div class="chart-bar" style="width: 85%;" id="wh-a-anodes">
+                    <div>🔋 Warehouse A - Anodes: <strong>25 units</strong> (85% capacity)</div>
+                </div>
+                <div class="chart-bar" style="width: 70%;" id="wh-a-cathodes">
+                    <div>⚡ Warehouse A - Cathodes: <strong>20 units</strong> (70% capacity)</div>
+                </div>
+                <div class="chart-bar" style="width: 90%;" id="wh-a-electrolyte">
+                    <div>💧 Warehouse A - Electrolyte: <strong>30 units</strong> (90% capacity)</div>
+                </div>
+                <div class="chart-bar" style="width: 60%;" id="wh-b-anodes">
+                    <div>🔋 Warehouse B - Anodes: <strong>15 units</strong> (60% capacity)</div>
+                </div>
+                <div class="chart-bar" style="width: 75%;" id="wh-b-cathodes">
+                    <div>⚡ Warehouse B - Cathodes: <strong>25 units</strong> (75% capacity)</div>
+                </div>
+                <div class="chart-bar" style="width: 40%;" id="wh-b-electrolyte">
+                    <div>💧 Warehouse B - Electrolyte: <strong>10 units</strong> (40% capacity)</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-card">
+            <div class="card-title">🚨 System Alerts & Events</div>
+            <div id="alerts-container">
+                <div class="alert-item">
+                    <strong>📊 INFO:</strong> Production order PO_20250831_143521 started on Conveyor C1
+                    <div style="font-size: 0.8em; opacity: 0.7; margin-top: 5px;">14:35:21 - MES System</div>
+                </div>
+                <div class="alert-item">
+                    <strong>⚠️ WARNING:</strong> Warehouse B electrolyte level below threshold (10 units)
+                    <div style="font-size: 0.8em; opacity: 0.7; margin-top: 5px;">14:34:58 - Inventory Management</div>
+                </div>
+                <div class="alert-item alert-critical">
+                    <strong>🔧 MAINTENANCE:</strong> Conveyor C3 scheduled maintenance in progress
+                    <div style="font-size: 0.8em; opacity: 0.7; margin-top: 5px;">14:30:00 - Maintenance System</div>
+                </div>
+                <div class="alert-item">
+                    <strong>✅ SUCCESS:</strong> Quality check passed - Batch #1247 approved
+                    <div style="font-size: 0.8em; opacity: 0.7; margin-top: 5px;">14:35:19 - Quality Control</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-card">
+            <div class="card-title">📈 Real-time Data Flow Log</div>
+            <div class="log-container" id="data-log">
+                <div class="log-entry">
+                    <span class="log-timestamp">14:35:21</span>
+                    <span class="log-info">[PLC] → Conveyor C1 speed updated: 78%</span>
+                </div>
+                <div class="log-entry">
+                    <span class="log-timestamp">14:35:21</span>
+                    <span class="log-info">[OPC UA] → Node ns=2;s=Conveyor.C1.Speed transmitted</span>
+                </div>
+                <div class="log-entry">
+                    <span class="log-timestamp">14:35:21</span>
+                    <span class="log-info">[SCADA] → Trend data updated for Conveyor C1</span>
+                </div>
+                <div class="log-entry">
+                    <span class="log-timestamp">14:35:21</span>
+                    <span class="log-info">[MES] → Production metrics recalculated</span>
+                </div>
+                <div class="log-entry">
+                    <span class="log-timestamp">14:35:21</span>
+                    <span class="log-info">[DATABASE] → 4 records stored successfully</span>
+                </div>
+                <div class="log-entry">
+                    <span class="log-timestamp">14:35:20</span>
+                    <span class="log-warning">[SCADA] → Low inventory alert: WH_B electrolyte</span>
+                </div>
+                <div class="log-entry">
+                    <span class="log-timestamp">14:35:19</span>
+                    <span class="log-info">[MES] → Quality check completed: PASS</span>
+                </div>
+                <div class="log-entry">
+                    <span class="log-timestamp">14:35:18</span>
+                    <span class="log-info">[DATABASE] → Analytics query executed: 12ms</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-card">
+            <div class="card-title">🎛️ System Controls & Monitoring</div>
+            <div class="controls">
+                <button class="control-button" onclick="startProduction()">▶️ Start Production</button>
+                <button class="control-button" onclick="pauseProduction()">⏸️ Pause System</button>
+                <button class="control-button danger" onclick="emergencyStop()">🛑 Emergency Stop</button>
+            </div>
+            
+            <div style="margin-top: 30px;">
+                <div style="margin-bottom: 15px; font-weight: bold; font-size: 1.1em;">⚡ System Performance</div>
+                <div class="metric-grid">
+                    <div class="metric-item">
+                        <span class="metric-value" style="color: #00ff88;">99.8%</span>
+                        <div class="metric-label">System Uptime</div>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-value" style="color: #00ff88;">15ms</span>
+                        <div class="metric-label">Avg Latency</div>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-value" style="color: #00ff88;">92.1%</span>
+                        <div class="metric-label">Overall OEE</div>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-value" style="color: #00ff88;">0.02%</span>
+                        <div class="metric-label">Error Rate</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 25px;">
+                <div style="margin-bottom: 15px; font-weight: bold; font-size: 1.1em;">🔧 Simulation Speed</div>
+                <input type="range" id="speed-slider" min="1" max="10" value="5" 
+                       style="width: 100%; margin-bottom: 10px; height: 8px; border-radius: 5px; background: rgba(255,255,255,0.2);" 
+                       onchange="updateSpeed(this.value)">
+                <div style="text-align: center; font-size: 1.1em;">
+                    Speed: <span id="speed-display" style="color: #00ff88; font-weight: bold;">5x</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Enhanced simulation state
+        let simulationRunning = true;
+        let simulationSpeed = 5;
+        let productionCount = 1247;
+        let conveyorData = {
+            C1: { speed: 78, load: 85, units: 456, running: true },
+            C2: { speed: 82, load: 78, units: 523, running: true },
+            C3: { speed: 0, load: 0, units: 268, running: false }
+        };
+        let inventoryData = {
+            'WH_A': { anodes: 25, cathodes: 20, electrolyte: 30 },
+            'WH_B': { anodes: 15, cathodes: 25, electrolyte: 10 }
+        };
+        let lastActiveLayer = 0;
+
+        // Layer animation cycle with enhanced effects
+        const layers = ['plc-layer', 'opcua-layer', 'scada-layer', 'mes-layer', 'database-layer'];
+        
+        function animateLayers() {
+            // Remove active class from all layers
+            layers.forEach(layer => {
+                document.getElementById(layer).classList.remove('active');
+            });
+            
+            // Add active class to current layer
+            document.getElementById(layers[lastActiveLayer]).classList.add('active');
+            
+            // Move to next layer
+            lastActiveLayer = (lastActiveLayer + 1) % layers.length;
+        }
+
+        function updateMetrics() {
+            if (!simulationRunning) return;
+
+            // Update conveyor data
+            Object.keys(conveyorData).forEach(conveyor => {
+                const data = conveyorData[conveyor];
+                if (data.running) {
+                    // Simulate production
+                    data.units += Math.floor(Math.random() * 3);
+                    
+                    // Simulate variations
+                    data.speed += (Math.random() - 0.5) * 4;
+                    data.load += (Math.random() - 0.5) * 6;
+                    
+                    // Keep within bounds
+                    data.speed = Math.max(70, Math.min(100, data.speed));
+                    data.load = Math.max(60, Math.min(95, data.load));
+                }
+                
+                // Update UI
+                document.getElementById(conveyor.toLowerCase() + '-speed').textContent = Math.floor(data.speed);
+                document.getElementById(conveyor.toLowerCase() + '-load').textContent = Math.floor(data.load);
+                document.getElementById(conveyor.toLowerCase() + '-units').textContent = data.units;
+            });
+
+            // Update total production
+            productionCount = Object.values(conveyorData).reduce((sum, conv) => sum + conv.units, 0);
+            document.getElementById('total-production').textContent = productionCount.toLocaleString();
+            
+            // Update production rate
+            const rate = 180 + Math.floor(Math.random() * 20);
+            document.getElementById('production-rate').textContent = rate;
+            
+            // Update efficiency
+            const efficiency = 92 + Math.random() * 6;
+            document.getElementById('efficiency').textContent = efficiency.toFixed(1) + '%';
+            document.getElementById('mes-efficiency').textContent = efficiency.toFixed(1) + '%';
+            
+            // Update quality rate
+            const quality = 96 + Math.random() * 3;
+            document.getElementById('quality-rate').textContent = quality.toFixed(1) + '%';
+            document.getElementById('mes-quality').textContent = quality.toFixed(1) + '%';
+            
+            // Update OEE
+            const oee = efficiency * 0.95;
+            document.getElementById('mes-oee').textContent = oee.toFixed(1) + '%';
+            
+            // Update progress bar
+            const progress = (productionCount % 1670) / 1670 * 100;
+            document.getElementById('production-progress').style.width = progress + '%';
+            
+            // Update system metrics
+            const nodeCount = 22 + Math.floor(Math.random() * 5);
+            document.getElementById('opcua-nodes').textContent = nodeCount;
+            
+            const latency = 12 + Math.floor(Math.random() * 8);
+            document.getElementById('opcua-latency').textContent = latency + 'ms';
+            
+            const records = 145000 + Math.floor(Math.random() * 1000);
+            document.getElementById('db-records').textContent = (records / 1000).toFixed(0) + 'K';
+            
+            const dbSpeed = 10 + Math.floor(Math.random() * 8);
+            document.getElementById('db-speed').textContent = dbSpeed + 'ms';
+            
+            const queries = 270 + Math.floor(Math.random() * 20);
+            document.getElementById('db-queries').textContent = queries;
+
+            // Update alarms based on system state
+            let alarmCount = 0;
+            if (inventoryData.WH_B.electrolyte < 15) alarmCount++;
+            if (conveyorData.C1.load > 90) alarmCount++;
+            if (conveyorData.C2.load > 90) alarmCount++;
+            document.getElementById('scada-alarms').textContent = alarmCount;
+        }
+
+        function addLogEntry(level, message) {
+            const logContainer = document.getElementById('data-log');
+            const timestamp = new Date().toLocaleTimeString();
+            
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.innerHTML = `
+                <span class="log-timestamp">${timestamp}</span>
+                <span class="log-${level}">${message}</span>
+            `;
+            
+            logContainer.insertBefore(logEntry, logContainer.firstChild);
+            
+            // Keep only last 25 entries
+            const entries = logContainer.querySelectorAll('.log-entry');
+            if (entries.length > 25) {
+                entries[entries.length - 1].remove();
+            }
+        }
+
+        function generateLogMessages() {
+            if (!simulationRunning) return;
+
+            const messages = [
+                { level: 'info', text: '[PLC] → Temperature sensor updated: 23.5°C' },
+                { level: 'info', text: '[OPC UA] → Node subscription callback triggered' },
+                { level: 'info', text: '[SCADA] → Historical data archived successfully' },
+                { level: 'info', text: '[MES] → Production schedule optimized' },
+                { level: 'info', text: '[DATABASE] → Real-time analytics updated' },
+                { level: 'info', text: '[SYSTEM] → Health check completed - All systems normal' },
+                { level: 'warning', text: '[INVENTORY] → Material consumption rate above average' },
+                { level: 'info', text: '[QUALITY] → Batch inspection completed: PASS' }
+            ];
+            
+            const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+            addLogEntry(randomMessage.level, randomMessage.text);
+        }
+
+        function simulateInventoryConsumption() {
+            if (!simulationRunning) return;
+
+            // Randomly consume materials
+            if (Math.random() < 0.4) { // 40% chance
+                const warehouses = Object.keys(inventoryData);
+                const warehouse = warehouses[Math.floor(Math.random() * warehouses.length)];
+                const materials = Object.keys(inventoryData[warehouse]);
+                const material = materials[Math.floor(Math.random() * materials.length)];
+                
+                if (inventoryData[warehouse][material] > 0) {
+                    inventoryData[warehouse][material]--;
+                    
+                    // Update UI
+                    const elementId = `${warehouse.toLowerCase()}-${material}`;
+                    const element = document.getElementById(elementId);
+                    if (element) {
+                        const quantity = inventoryData[warehouse][material];
+                        const capacity = material === 'anodes' ? 30 : material === 'cathodes' ? 35 : 33;
+                        const percentage = (quantity / capacity) * 100;
+                        
+                        element.style.width = percentage + '%';
+                        element.firstElementChild.innerHTML = 
+                            `${material === 'anodes' ? '🔋' : material === 'cathodes' ? '⚡' : '💧'} 
+                             ${warehouse} - ${material.charAt(0).toUpperCase() + material.slice(1)}: 
+                             <strong>${quantity} units</strong> (${percentage.toFixed(0)}% capacity)`;
+                    }
+                    
+                    addLogEntry('warning', `[INVENTORY] → Consumed 1 ${material} from ${warehouse}`);
+                }
+            }
+        }
+
+        // Control functions
+        function startProduction() {
+            simulationRunning = true;
+            addLogEntry('info', '[SYSTEM] → Production started by operator');
+            
+            // Update status indicators
+            ['plc-layer', 'opcua-layer', 'scada-layer', 'mes-layer', 'database-layer'].forEach(layer => {
+                const statusElement = document.querySelector(`#${layer} .layer-status`);
+                statusElement.className = 'layer-status ' + 
+                    (layer === 'scada-layer' ? 'status-monitoring' : 
+                     layer === 'mes-layer' ? 'status-processing' : 'status-online');
+                statusElement.textContent = layer === 'scada-layer' ? 'MONITORING' : 
+                                           layer === 'mes-layer' ? 'PROCESSING' : 
+                                           layer === 'database-layer' ? 'STORING' :
+                                           layer === 'opcua-layer' ? 'CONNECTED' : 'ONLINE';
+            });
+
+            // Restart conveyors C1 and C2
+            conveyorData.C1.running = true;
+            conveyorData.C2.running = true;
+            conveyorData.C1.speed = 75 + Math.random() * 10;
+            conveyorData.C2.speed = 75 + Math.random() * 10;
+        }
+
+        function pauseProduction() {
+            simulationRunning = false;
+            addLogEntry('warning', '[SYSTEM] → Production paused by operator');
+            
+            // Update status to paused
+            ['plc-layer', 'opcua-layer', 'scada-layer', 'mes-layer', 'database-layer'].forEach(layer => {
+                const statusElement = document.querySelector(`#${layer} .layer-status`);
+                statusElement.className = 'layer-status status-processing';
+                statusElement.textContent = 'PAUSED';
+            });
+        }
+
+        function emergencyStop() {
+            simulationRunning = false;
+            addLogEntry('error', '[SYSTEM] → EMERGENCY STOP activated!');
+            
+            // Update all systems to stopped
+            ['plc-layer', 'opcua-layer', 'scada-layer', 'mes-layer', 'database-layer'].forEach(layer => {
+                const statusElement = document.querySelector(`#${layer} .layer-status`);
+                statusElement.className = 'layer-status status-processing';
+                statusElement.textContent = 'STOPPED';
+            });
+            
+            // Stop all conveyors
+            Object.keys(conveyorData).forEach(conveyor => {
+                conveyorData[conveyor].running = false;
+                conveyorData[conveyor].speed = 0;
+                conveyorData[conveyor].load = 0;
+            });
+            
+            // Add critical alert
+            const alertsContainer = document.getElementById('alerts-container');
+            const emergencyAlert = document.createElement('div');
+            emergencyAlert.className = 'alert-item alert-critical';
+            emergencyAlert.innerHTML = `
+                <strong>🚨 EMERGENCY:</strong> Production line emergency stop activated
+                <div style="font-size: 0.8em; opacity: 0.7; margin-top: 5px;">
+                    ${new Date().toLocaleTimeString()} - Safety System
+                </div>
+            `;
+            alertsContainer.insertBefore(emergencyAlert, alertsContainer.firstChild);
+        }
+
+        function updateSpeed(value) {
+            simulationSpeed = parseInt(value);
+            document.getElementById('speed-display').textContent = simulationSpeed + 'x';
+            addLogEntry('info', `[SYSTEM] → Simulation speed changed to ${simulationSpeed}x`);
+        }
+
+        // Initialize simulation with enhanced timing
+        function startSimulation() {
+            // Layer animation
+            setInterval(animateLayers, 2500 / simulationSpeed);
+            
+            // Update metrics
+            setInterval(updateMetrics, 3000 / simulationSpeed);
+            
+            // Generate log messages
+            setInterval(generateLogMessages, 4000 / simulationSpeed);
+            
+            // Inventory consumption
+            setInterval(simulateInventoryConsumption, 8000 / simulationSpeed);
+            
+            // Initial messages
+            addLogEntry('info', '[SYSTEM] → Integration dashboard initialized');
+            addLogEntry('info', '[SYSTEM] → All systems online and operational');
+            addLogEntry('info', '[SYSTEM] → Real-time monitoring active');
+        }
+
+        // Start simulation when page loads
+        window.addEventListener('load', startSimulation);
+    </script>
+</body>
+</html>

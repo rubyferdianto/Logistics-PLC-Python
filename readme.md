@@ -1,104 +1,170 @@
-# Logistics PLC Python Application
+# 🏭 EV Manufacturing Simulation with Industrial Integration
 
-## System Architecture Overview
+## 🌟 Overview
 
+This project implements a comprehensive **Electric Vehicle (EV) Manufacturing Simulation** with full industrial integration following the **PLC → OPC UA → MES → DATABASE** architecture. The system provides real-time monitoring, production control, quality management, and data analytics for EV battery manufacturing.
+
+## 🏗️ System Architecture
+
+### Integration Flow
 ```
-+-------------------+        +-----------------+        +----------------------+
-|   Sensors &       |        |                 |        |                      |
-|   Actuators       | <----> |   PLC (Logic)   | <----> | Python Application   |
-| (Conveyors, RFID, |        | (Ladder/FBD/ST) |        | (Data, AI, Dashboard)|
-|  Motors, Scanners)|        |                 |        |                      |
-+-------------------+        +-----------------+        +----------------------+
-                                   |                         |
-                                   |                         |
-                             Industrial Protocols      Databases, Cloud,
-                         (Modbus, OPC UA, MQTT, API)   Web Dashboards, ML
-```
-
-## Components
-
-### 1. Sensors & Actuators
-- **Barcode/RFID scanners:** Detect parcels
-- **Proximity sensors:** Track items on conveyors
-- **Motors/actuators:** Move packages along sorting lines
-
-### 2. PLC (Programmable Logic Controller)
-- Runs real-time control logic (e.g., conveyor ON when sensor detects package)
-- Ensures reliability & deterministic operation
-- Programs: Ladder, FBD, ST
-
-### 3. Python Application (PC/Server/Cloud)
-- Connects to PLC via OPC UA, Modbus, MQTT, or API
-- Collects operational data (e.g., number of packages sorted, errors)
-- Stores data in SQL or time-series database
-- Runs analytics/AI (e.g., route optimization, predictive maintenance)
-- Provides dashboard (Flask/Django + Plotly/Power BI)
-
-## Project Structure
-
-```
-logistics-plc-python/
-├── app/
-│   ├── __init__.py
-│   ├── models/
-│   │   ├── __init__.py
-│   │   ├── sensor_data.py
-│   │   └── package.py
-│   ├── plc_connection/
-│   │   ├── __init__.py
-│   │   ├── modbus_client.py
-│   │   ├── opcua_client.py
-│   │   └── mqtt_client.py
-│   ├── data_processing/
-│   │   ├── __init__.py
-│   │   ├── analytics.py
-│   │   └── ml_models.py
-│   ├── web_dashboard/
-│   │   ├── __init__.py
-│   │   ├── routes.py
-│   │   ├── templates/
-│   │   └── static/
-│   └── database/
-│       ├── __init__.py
-│       ├── connection.py
-│       └── migrations/
-├── tests/
-├── config/
-│   ├── __init__.py
-│   ├── settings.py
-│   └── database_config.py
-├── requirements.txt
-├── main.py
-└── README.md
+┌─────────┐    ┌──────────┐    ┌─────────┐    ┌──────────┐
+│   PLC   │───▶│  OPC UA  │───▶│   MES   │───▶│ DATABASE │
+└─────────┘    └──────────┘    └─────────┘    └──────────┘
+     │              │              │              │
+     ▼              ▼              ▼              ▼
+• Conveyor Control  • Real-time     • Production   • Analytics
+• Sensors           • Data Exchange • Scheduling   • Reporting
+• Actuators         • Subscriptions • Quality      • Storage
+• I/O Modules       • Commands      • Inventory    • History
 ```
 
-## Installation & Setup
+### Components
 
-1. Clone the repository
-2. Install dependencies: `pip install -r requirements.txt`
-3. Configure database settings in `config/settings.py`
-4. Run the application: `python main.py`
+#### 🔌 **PLC Layer** (Programmable Logic Controller)
+- **Conveyor Control**: 3 production lines (C1, C2, C3)
+- **Sensor Integration**: Speed, position, quality sensors
+- **Material Handling**: Automated warehouse management
+- **Safety Systems**: Emergency stops, fault detection
 
-## Features
+#### 📡 **OPC UA Layer** (Industrial Communication)
+- **Real-time Data Exchange**: Standardized industrial protocol
+- **Node Subscriptions**: Live monitoring of PLC variables
+- **Bidirectional Communication**: Read/write operations
+- **Security**: Authentication and encryption support
 
-- **Real-time PLC Communication**: Connect via Modbus, OPC UA, or MQTT
-- **Data Collection**: Store sensor readings and package tracking data
-- **Analytics & AI**: Detect bottlenecks, predict maintenance needs
-- **Web Dashboard**: Monitor system status and performance metrics
-- **Alert System**: Notifications for jams, errors, or maintenance
+#### 🏭 **MES Layer** (Manufacturing Execution System)
+- **Production Planning**: Order scheduling and management
+- **Quality Control**: Real-time testing and validation
+- **Resource Management**: Material and equipment tracking
+- **Performance Monitoring**: KPIs and efficiency metrics
 
-## Example Use Case
+#### 📊 **Database Layer** (Data Management)
+- **Real-time Storage**: Live production data
+- **Historical Analytics**: Trends and reporting
+- **Quality Records**: Test results and compliance
+- **Inventory Tracking**: Material movements and levels
 
-1. **Conveyor PLC** ensures packages move correctly to destinations
-2. **Python app** listens to package events and logs them in database
-3. **AI/Analytics** detects bottlenecks (e.g., package jam) or forecasts demand
-4. **Managers** view web dashboard to track system status
+## 🚀 Quick Start
 
-## Development Status
+### 🎯 **Visualization Options**
 
-- [x] Project structure setup
-- [ ] PLC connection modules
-- [ ] Database models
-- [ ] Web dashboard
-- [ ] Analytics engine
-- [ ] Testing suite
+**Option 1: Interactive HTML Dashboard (Recommended)**
+```bash
+# Standalone demo - No dependencies required!
+open standalone_integration_demo.html
+
+# Or run the web server for real-time data streaming
+python launch_dashboard.py
+```
+
+**Option 2: Command Line Demo**
+```bash
+# Quick demo showing complete PLC→OPC UA→SCADA→MES→DATABASE flow
+python demo_integration.py --cycles 5 --interval 2
+```
+
+### ⚙️ **System Operational Modes**
+
+**Option 3: Full Integration System (Production)**
+```bash
+# Install dependencies
+pip install -r requirements_integration.txt
+
+# Setup database
+python start_integration.py --setup-db
+
+# Run full integration system
+python start_integration.py
+
+# Or run with debug logging
+python start_integration.py --debug
+```
+
+### Option 2: Simulation Mode Only
+```bash
+# Run MQTT-based simulation
+python start_integration.py --simulator
+
+# Or directly run advanced simulator
+python scripts/mqtt_simulator_advanced.py
+```
+
+### Option 3: MQTT Simulation Mode
+```bash
+# For development/testing with MQTT simulation
+python start_integration.py --simulator
+
+# Or run standalone MQTT simulator  
+python scripts/mqtt_simulator_advanced.py
+```
+
+## 🎨 **Visualization Features**
+
+### 📊 **Interactive HTML Dashboard**
+- **Real-time Data Flow Animation**: Visual representation of PLC→OPC UA→SCADA→MES→DATABASE
+- **Live Production Monitoring**: Conveyor status, production metrics, efficiency KPIs
+- **System Health Dashboard**: Component status, alerts, performance metrics
+- **Interactive Controls**: Start/stop production, emergency controls, speed adjustment
+- **Responsive Design**: Works on desktop, tablet, and mobile devices
+
+### 🏭 **Industrial-Grade Monitoring**
+- **SCADA-style Interface**: Professional industrial control aesthetics
+- **Real-time Data Logs**: Live system events and data processing logs
+- **Alarm Management**: Visual and text-based alert system
+- **Inventory Tracking**: Live material consumption and warehouse levels
+- **Performance Analytics**: OEE, quality rates, production forecasting
+
+### 🎯 **Demo Capabilities**
+- **Simulation Modes**: Standalone HTML demo or Python-driven real-time data
+- **Configurable Speed**: Adjustable simulation speed (1x to 10x)
+- **System Integration**: Shows complete data flow through all 5 layers
+- **Educational Tool**: Perfect for understanding industrial automation concepts
+
+## 🛠️ Installation
+
+### Prerequisites
+- **Python 3.8+**
+- **OPC UA Server** (optional, for full integration)
+- **MQTT Broker** (test.mosquitto.org used by default)
+
+### Dependencies Installation
+```bash
+# Core integration dependencies
+pip install -r requirements_integration.txt
+
+# Alternative: Install individually
+pip install asyncua pandas flask paho-mqtt sqlite3
+```
+
+### System Setup
+```bash
+# Check dependencies
+python start_integration.py --check-deps
+
+# Initialize database
+python start_integration.py --setup-db
+
+# Show configuration
+python start_integration.py --show-config
+```
+
+## 📋 Integration Features
+
+### 🔄 **Real-time Data Flow**
+1. **PLC Data Collection**: Sensors and actuators send data via OPC UA
+2. **Data Processing**: MES system processes and validates data
+3. **Database Storage**: Historical and real-time data storage
+4. **Analytics & Reporting**: KPIs, trends, and performance metrics
+
+### 🏭 **Production Management**
+- **Automated Scheduling**: Order creation and conveyor assignment
+- **Real-time Monitoring**: Live production status and metrics
+- **Quality Control**: Automated testing and validation
+- **Inventory Management**: Material tracking and auto-restocking
+
+### 📊 **Analytics & Monitoring**
+- **Production KPIs**: OEE, efficiency, throughput
+- **Quality Metrics**: Pass rates, defect analysis
+- **System Health**: Component status and alarms
+- **Historical Trends**: Long-term performance analysis
